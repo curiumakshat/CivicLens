@@ -40,6 +40,32 @@ python -m uvicorn app.main:app --reload
 
 Open http://127.0.0.1:8000. The current UI is self-contained apart from the optional Google Fonts request; no map or JavaScript CDN is required.
 
+### Quest 1 foundation
+
+The application now has a small package structure under `app/`, SQLAlchemy wired to a local SQLite database by default, and a liveness endpoint:
+
+```text
+app/
+├── config.py
+├── database.py
+├── main.py
+└── routes/
+    └── health.py
+```
+
+Check the running service at http://127.0.0.1:8000/health. To use another database later, set `CIVICLENS_DATABASE_URL` before starting the server.
+
+### Quest 2 database
+
+The database foundation now creates these SQLite tables on application startup:
+
+- `users`: citizen/officer identity and trust metadata.
+- `reports`: individual citizen submissions, including coordinates and optional photos.
+- `issues`: deduplicated real-world problems with priority and lifecycle fields.
+- `status_log`: an audit trail for every issue status transition.
+
+The `Report` to `Issue` relationship is intentionally nullable so a new report can be stored before the deduplication service attaches it to an existing issue. The same SQLAlchemy models can use PostgreSQL later by changing `CIVICLENS_DATABASE_URL`.
+
 ## Suggested next build steps
 
 1. Add SQLAlchemy models for users, reports, issues, and status history.

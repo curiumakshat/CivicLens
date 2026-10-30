@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7f6">
+  <title>CivicLens — City issue tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#tracker" aria-label="CivicLens home">
+        <span class="brand-mark"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="M18 4.5 31 11v14L18 32.5 5 25V11L18 4.5Z"/><path d="M18 4.5V18m13-7L18 18 5 11m13 7v14.5"/><circle cx="18" cy="18" r="3.1"/></svg></span>
+        <span class="brand-name">civic<span>lens</span><small>COMMUNITY DESK</small></span>
+      </a>
+      <div class="workspace-label">WORKSPACE</div>
+      <nav class="main-nav" aria-label="Main navigation">
+        <button class="nav-item active" data-view="tracker"><span class="nav-icon">◉</span> Public tracker</button>
+        <button class="nav-item" data-view="report"><span class="nav-icon">＋</span> Report an issue</button>
+        <button class="nav-item" data-view="queue"><span class="nav-icon">▤</span> Officer queue <span class="nav-count">8</span></button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="ward-card"><div class="ward-icon">⌖</div><div><span>YOUR AREA</span><strong>Jaipur · Ward 7</strong></div><button title="Change area" aria-label="Change area">⌄</button></div>
+        <button class="profile"><span class="avatar">AK</span><span><strong>Anushka K.</strong><small>Resident account</small></span><span class="more">···</span></button>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobile-menu" aria-label="Toggle navigation">☰</button>
+        <div class="breadcrumb"><span>Jaipur Municipal Corporation</span><span class="crumb-slash">/</span><strong id="page-crumb">Public tracker</strong></div>
+        <div class="top-actions"><span class="live-indicator demo-indicator"><i></i> DEMO DATA</span><button class="icon-button" title="Notifications" aria-label="Notifications">♧<i class="notification-dot"></i></button><span class="top-avatar">AK</span></div>
+      </header>
+
+      <section class="view active" id="view-tracker">
+        <div class="page-heading"><div><div class="eyebrow">JAIPUR · WARD 7</div><h1>Your neighbourhood, <em>in focus.</em></h1><p>See what's happening nearby and follow every issue through to resolution.</p></div><button class="button button-dark" data-go="report"><span>＋</span> Report an issue</button></div>
+        <div class="stat-row">
+          <article class="stat-card"><div class="stat-top"><span>Open issues nearby</span><span class="stat-icon mint">◉</span></div><strong id="stat-open">24</strong><div class="stat-note"><span class="note-dot green"></span> Across your ward</div></article>
+          <article class="stat-card"><div class="stat-top"><span>Resolved this month</span><span class="stat-icon lavender">✓</span></div><strong>38</strong><div class="stat-note"><span class="trend-up">↑ 12%</span> vs. last month</div></article>
+          <article class="stat-card"><div class="stat-top"><span>Average response</span><span class="stat-icon peach">◷</span></div><strong>2.4 <small>days</small></strong><div class="stat-note">From report to assignment</div></article>
+          <article class="stat-card"><div class="stat-top"><span>Reports from residents</span><span class="stat-icon blue">♧</span></div><strong>186</strong><div class="stat-note">Your voices make a difference</div></article>
+        </div>
+        <div class="tracker-grid">
+          <section class="panel map-panel">
+            <div class="panel-header"><div><h2>Issues around you</h2><p>Reports clustered by location · Ward 7</p></div><button class="quiet-button" id="map-expand">⌗ <span>Full map</span></button></div>
+            <div class="map-legend"><span><i class="pin-dot critical"></i>Critical <b>3</b></span><span><i class="pin-dot high"></i>High <b>8</b></span><span><i class="pin-dot medium"></i>Medium <b>13</b></span></div>
+            <div class="map" id="map" aria-label="Illustrated map showing reported civic issues">
+              <div class="map-grid"></div><div class="park park-one"><span>Central Park</span></div><div class="park park-two"><span>Rajasthan University</span></div><div class="lake"></div>
+              <span class="road road-a">JLN Marg</span><span class="road road-b">Tonk Road</span><span class="road road-c">Gopalpura Bypass</span><span class="road road-d">Sahkar Marg</span>
+              <span class="map-label label-market">Gandhi Nagar</span><span class="map-label label-school">SMS Hospital</span><span class="map-label label-park">Adarsh Nagar</span>
+              <button class="map-pin pin-a" data-issue="CVL-8942" aria-label="Critical pothole at Ward 7 Main Gate"><span>!</span></button><button class="map-pin pin-b high-pin" data-issue="CVL-8891" aria-label="High waste issue at Sector 4"><span>8</span></button><button class="map-pin pin-c medium-pin" data-issue="CVL-8710" aria-label="Medium streetlight issue"><span>5</span></button><button class="map-pin pin-d high-pin" data-issue="CVL-8816" aria-label="High water leak"><span>6</span></button><button class="map-pin pin-e medium-pin" data-issue="CVL-8755" aria-label="Medium drainage issue"><span>4</span></button><div class="map-you"><i></i> YOU</div>
+              <div class="map-zoom"><button aria-label="Zoom in">+</button><button aria-label="Zoom out">−</button></div><div class="map-attribution">Illustrative ward map</div>
+            </div>
+            <div class="map-footer"><span><i></i> Sample Jaipur Ward 7 data</span><button id="location-button">◎ Use my location</button></div>
+          </section>
+
+          <section class="panel issues-panel">
+            <div class="panel-header issues-heading"><div><h2>Nearby issues <span class="count-pill" id="issue-count">5</span></h2><p>Follow progress in your community</p></div><button class="quiet-button" id="sort-button">↕ <span>Priority</span></button></div>
+            <label class="search-box"><span>⌕</span><input id="issue-search" type="search" placeholder="Search by issue or location…"><kbd>⌘ K</kbd></label>
+            <div class="filter-row" role="group" aria-label="Filter issues"><button class="filter-chip selected" data-filter="all">All <span>5</span></button><button class="filter-chip" data-filter="open">Open <span>3</span></button><button class="filter-chip" data-filter="progress">In progress <span>1</span></button><button class="filter-chip" data-filter="resolved">Resolved <span>1</span></button></div>
+            <div class="issue-list" id="issue-list"></div>
+            <button class="view-all" id="view-all">View all ward issues <span>→</span></button>
+          </section>
+        </div>
+        <div class="trust-strip"><span class="trust-icon">✳</span><span><strong>Every report makes a difference.</strong> Issues are grouped and prioritised so the most urgent problems get attention first.</span><button data-go="report">Add your voice <span>→</span></button></div>
+      </section>
+
+      <section class="view" id="view-queue">
+        <div class="page-heading"><div><div class="eyebrow">OPERATIONS · WARD 7</div><h1>Officer <em>dispatch queue.</em></h1><p>Prioritised civic issues, routed to the right teams.</p></div><button class="button button-outline" id="refresh-queue">↻ Refresh queue</button></div>
+        <div class="queue-summary"><div><span>Needs attention</span><strong>8</strong><small>issues awaiting assignment</small></div><div><span>Critical priority</span><strong class="red-text">3</strong><small>respond as soon as possible</small></div><div><span>In progress</span><strong>6</strong><small>being worked on by field teams</small></div><div><span>Resolved today</span><strong class="green-text">4</strong><small>great work from your teams</small></div></div>
+        <section class="panel queue-panel"><div class="panel-header"><div><h2>Priority queue</h2><p>Issues ranked by explainable priority score</p></div><div class="queue-tools"><select id="queue-filter" aria-label="Filter by priority"><option value="all">All priorities</option><option value="critical">Critical</option><option value="high">High & above</option><option value="medium">Medium & above</option></select><button class="quiet-button" id="download-csv">↓ <span>Export</span></button></div></div>
+          <div class="table-scroll"><table><thead><tr><th>ISSUE</th><th>LOCATION</th><th>DEPARTMENT</th><th>REPORTS</th><th>PRIORITY SCORE</th><th>STATUS</th><th></th></tr></thead><tbody id="queue-body"></tbody></table></div>
+        </section>
+      </section>
+
+      <section class="view" id="view-report">
+        <div class="page-heading"><div><div class="eyebrow">HELP YOUR COMMUNITY</div><h1>Report an <em>issue.</em></h1><p>A photo and a pin help the right team find and fix the problem.</p></div></div>
+        <div class="report-layout"><form class="panel report-form" id="report-form"><div class="form-section-title"><span class="step-number">1</span><div><h2>What needs attention?</h2><p>Tell us a little about the issue.</p></div></div>
+          <label class="field-label" for="category">Issue category <span>*</span></label><select id="category" required><option value="">Choose a category</option><option>Roads & potholes</option><option>Garbage & sanitation</option><option>Streetlights</option><option>Water supply</option><option>Drainage & flooding</option><option>Public spaces</option><option>Other</option></select>
+          <label class="field-label" for="title">Short description <span>*</span></label><input id="title" required maxlength="90" placeholder="e.g. Deep pothole near the school crossing"><div class="field-hint">Keep it brief so the right team can act quickly.</div>
+          <label class="field-label" for="details">More details</label><textarea id="details" rows="3" maxlength="500" placeholder="What happened? Is anyone at immediate risk?"></textarea>
+          <div class="form-section-title second-step"><span class="step-number">2</span><div><h2>Where is it?</h2><p>We use the location to route your report to the right ward.</p></div></div>
+          <div class="location-box"><span class="location-symbol">⌖</span><div><strong id="location-text">Add the issue location</strong><small id="coordinates">Your precise location is only shared with the municipal team.</small></div><button type="button" id="pin-location">◎ Pin on map</button></div>
+          <label class="field-label">Add a photo <span class="optional">OPTIONAL</span></label><label class="upload-box" for="photo"><span class="upload-icon">↥</span><strong>Choose a photo or drop it here</strong><small>JPG or PNG · up to 10 MB</small><input id="photo" type="file" accept="image/png,image/jpeg"></label><div id="photo-name" class="photo-name"></div>
+          <div class="privacy-note"><span>♧</span><p>Your name is not shown publicly. Your photo and location help verify this issue and may be visible to the municipal team.</p></div>
+          <button type="submit" class="button button-dark submit-report">Submit report <span>→</span></button>
+        </form>
+        <aside class="report-aside"><div class="info-card"><span class="info-icon">✳</span><h3>One issue, many voices.</h3><p>When neighbours report the same problem, we group reports together. The combined activity helps the city see how many people are affected.</p><div class="mini-avatars"><span>R</span><span>M</span><span>S</span><span>+4</span></div><small>7 residents reported a nearby road issue</small></div><div class="info-card scoring-card"><span class="info-icon score-info">↗</span><h3>Fair, explainable priorities.</h3><p>Each issue gets a score based on its severity, location, community reports, and how long it has gone unresolved.</p><div class="score-legend"><span><i class="critical"></i>Critical <b>80–100</b></span><span><i class="high"></i>High <b>60–79</b></span><span><i class="medium"></i>Medium <b>35–59</b></span><span><i class="low"></i>Low <b>0–34</b></span></div></div><div class="help-card"><span>Need urgent help?</span><p>If someone is in immediate danger, call your local emergency services.</p></div></aside></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop hidden" id="modal-backdrop"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="modal-close" id="modal-close" aria-label="Close">×</button><div class="modal-kicker">ISSUE DETAILS</div><div id="modal-content"></div></section></div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

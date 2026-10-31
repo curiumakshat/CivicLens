@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#073d4d">
+  <title>CivicLens — Account Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/login.css">
+</head>
+<body class="dashboard-page">
+  <div class="dashboard-wrapper">
+    <header class="dash-topbar">
+      <div class="brand">
+        <span class="brand-icon">
+          <svg viewBox="0 0 36 36"><path d="M18 4.5 31 11v14L18 32.5 5 25V11L18 4.5Z"/><path d="M18 4.5V18m13-7L18 18 5 11m13 7v14.5"/><circle cx="18" cy="18" r="3.1"/></svg>
+        </span>
+        <div class="brand-text">
+          <h1>Civic<span>Lens</span></h1>
+          <small>RESIDENT DESK</small>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <a href="/auth/logout" class="btn-logout">Sign out</a>
+      </div>
+    </header>
+
+    <main class="dash-content">
+      <div class="profile-card">
+        <div class="profile-header">
+          {% if user_avatar %}
+          <img src="{{ user_avatar }}" alt="{{ user_name }}" class="dash-avatar-img">
+          {% else %}
+          <div class="dash-avatar-initials">
+            {{ (user_name[:2] if user_name else 'AK') | upper }}
+          </div>
+          {% endif %}
+          <div class="profile-title">
+            <span class="verified-badge">✓ VERIFIED RESIDENT</span>
+            <h2>{{ user_name }}</h2>
+            <p>{{ user_email }}</p>
+          </div>
+        </div>
+
+        <div class="profile-stats-grid">
+          <div class="stat-box">
+            <span class="stat-label">AUTHENTICATION METHOD</span>
+            <strong>
+              {% if auth_provider == 'google' %}
+              Google OAuth2
+              {% elif auth_provider == 'gmail_otp' %}
+              Gmail OTP
+              {% else %}
+              {{ auth_provider | capitalize }}
+              {% endif %}
+            </strong>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">TRUST SCORE</span>
+            <strong class="green-text">1.0 / 1.0 (Maximum)</strong>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">SECURITY STATUS</span>
+            <strong class="blue-text">Encrypted Session</strong>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">USER ID</span>
+            <strong>#{{ user_id }}</strong>
+          </div>
+        </div>
+
+        <div class="success-message-box">
+          <p>
+            🎉 <strong>Authentication Successful!</strong> You have logged in securely. The authentication system verified your credentials via 
+            {% if auth_provider == 'google' %}
+            <strong>Google OAuth 2.0</strong>
+            {% else %}
+            <strong>Gmail One-Time Passcode</strong>
+            {% endif %}.
+          </p>
+        </div>
+
+        <div class="dash-footer-actions">
+          <a href="/login" class="btn-outline">Switch Account</a>
+          <a href="/auth/logout" class="btn-danger">Sign Out</a>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

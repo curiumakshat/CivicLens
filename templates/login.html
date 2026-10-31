@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f8fc">
+  <title>CivicLens — Resident Verification</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="auth-page">
+  <div class="auth-shell">
+    <header class="auth-topbar">
+      <a class="auth-brand" href="/login" aria-label="CivicLens home">
+        <span class="auth-brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 36 36"><path d="M7 15h22M10 15v12m8-12v12m8-12v12M6 29h24M5 12 18 6l13 6"/></svg>
+        </span>
+        <span><strong>Civic<span>Lens</span></strong><small>HACKNOVATE PS 9</small></span>
+      </a>
+      <nav class="auth-nav" aria-label="Product areas">
+        <a class="active" href="/login">Auth</a>
+        <a href="/tracker#report">Report</a>
+        <a href="/tracker">Tracker</a>
+        <a href="/tracker#queue">Officer</a>
+      </nav>
+    </header>
+
+    <main class="auth-main">
+      <section class="auth-card" aria-labelledby="auth-title">
+        <div class="auth-emblem" aria-hidden="true">
+          <svg viewBox="0 0 40 40"><path d="M20 4 31 8v9c0 8-4.8 14.2-11 18-6.2-3.8-11-10-11-18V8l11-4Z"/><path d="m14 19 4 4 8-9"/></svg>
+        </div>
+        <p class="auth-kicker">STATE MUNICIPAL CORPORATION</p>
+        <h1 id="auth-title">Resident Verification Portal</h1>
+        <p class="auth-intro">Direct authentication for verified civic issue reporting and transparent tracking</p>
+
+        {% if error %}
+        <div class="auth-error-banner" role="alert">
+          <span class="error-icon" aria-hidden="true">⚠️</span>
+          <span>{{ error }}</span>
+        </div>
+        {% endif %}
+
+        {% if is_logged_in %}
+        <div class="active-session-banner">
+          <span>Signed in as <strong>{{ user_name or user_email }}</strong></span>
+          <div class="session-links">
+            <a href="/tracker">Go to Tracker &rarr;</a>
+            <a href="/auth/logout" class="logout-link">Sign out</a>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- GOOGLE OAUTH AUTHENTICATION -->
+        <div class="google-auth-container">
+          <a href="/auth/google/login" id="google-login-btn" class="google-auth-button" aria-label="Continue with Google">
+            <svg class="google-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            <span id="google-btn-label">Continue with Google</span>
+          </a>
+        </div>
+
+        <div class="auth-divider-or" aria-hidden="true">
+          <span>OR</span>
+        </div>
+
+        <!-- MUNICIPAL OTP FORM -->
+        <form id="auth-form" novalidate>
+          <label class="auth-label" for="contact">Registered Mobile Number or Gmail</label>
+          <div class="contact-field">
+            <input id="contact" name="contact" type="text" autocomplete="username" placeholder="9876543210 or resident@gmail.com" required>
+          </div>
+          <p class="auth-help" id="contact-help">One-time security credential will be dispatched for verification</p>
+
+          <div class="otp-heading">
+            <label class="auth-label" for="otp-1">6-Digit Municipal OTP</label>
+            <button type="button" id="resend-otp" disabled>Resend code</button>
+          </div>
+          <div class="otp-inputs" role="group" aria-label="Six digit municipal OTP">
+            <input id="otp-1" class="otp-input" type="text" inputmode="numeric" maxlength="1" aria-label="OTP digit 1" disabled>
+            <input class="otp-input" type="text" inputmode="numeric" maxlength="1" aria-label="OTP digit 2" disabled>
+            <input class="otp-input" type="text" inputmode="numeric" maxlength="1" aria-label="OTP digit 3" disabled>
+            <input class="otp-input" type="text" inputmode="numeric" maxlength="1" aria-label="OTP digit 4" disabled>
+            <input class="otp-input" type="text" inputmode="numeric" maxlength="1" aria-label="OTP digit 5" disabled>
+            <input class="otp-input" type="text" inputmode="numeric" maxlength="1" aria-label="OTP digit 6" disabled>
+          </div>
+
+          <button class="auth-submit" id="auth-submit" type="submit">Send OTP &rarr;</button>
+          <p class="auth-status" id="auth-status" role="status" aria-live="polite"></p>
+        </form>
+
+        <div class="operator-switch">
+          <span>Ward Officer or Administrative Official?</span>
+          <a href="/tracker#queue">Switch to Operator Console</a>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // DOM Elements
+    const googleBtn = document.querySelector('#google-login-btn');
+    const googleBtnLabel = document.querySelector('#google-btn-label');
+    const authForm = document.querySelector('#auth-form');
+    const contactInput = document.querySelector('#contact');
+    const authSubmit = document.querySelector('#auth-submit');
+    const authStatus = document.querySelector('#auth-status');
+    const resendBtn = document.querySelector('#resend-otp');
+    const otpInputs = [...document.querySelectorAll('.otp-input')];
+
+    let otpRequested = false;
+    let resendTimer = null;
+
+    // Prevent accidental duplicate submissions on Google OAuth button
+    googleBtn?.addEventListener('click', (e) => {
+      if (googleBtn.classList.contains('submitting')) {
+        e.preventDefault();
+        return;
+      }
+      googleBtn.classList.add('submitting');
+      googleBtnLabel.textContent = 'Redirecting to Google...';
+    });
+
+    function setStatus(msg, kind = '') {
+      if (!authStatus) return;
+      authStatus.textContent = msg;
+      authStatus.className = 'auth-status ' + kind;
+    }
+
+    // OTP Input handlers (auto-advance, backspace, paste)
+    otpInputs.forEach((input, idx) => {
+      input.addEventListener('input', () => {
+        input.value = input.value.replace(/\D/g, '').slice(0, 1);
+        if (input.value && otpInputs[idx + 1]) {
+          otpInputs[idx + 1].focus();
+        }
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !input.value && otpInputs[idx - 1]) {
+          otpInputs[idx - 1].focus();
+        }
+      });
+      input.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const pasteData = (e.clipboardData || window.clipboardData).getData('text');
+        const digits = pasteData.replace(/\D/g, '').slice(0, 6);
+        if (digits.length) {
+          digits.split('').forEach((d, i) => {
+            if (otpInputs[i]) otpInputs[i].value = d;
+          });
+          const next = Math.min(digits.length, otpInputs.length - 1);
+          otpInputs[next]?.focus();
+        }
+      });
+    });
+
+    async function requestOtp() {
+      const contact = contactInput.value.trim();
+      if (!contact) {
+        setStatus('Please enter your mobile number or email address.', 'error');
+        contactInput.focus();
+        return;
+      }
+
+      authSubmit.disabled = true;
+      authSubmit.textContent = 'Sending...';
+      setStatus('Generating security code...', 'info');
+
+      try {
+        const res = await fetch('/auth/request-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contact }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Failed to request OTP.');
+
+        otpRequested = true;
+        otpInputs.forEach(i => i.disabled = false);
+        authSubmit.disabled = false;
+        authSubmit.innerHTML = 'Verify &amp; Continue &rarr;';
+        resendBtn.disabled = false;
+
+        if (data.demo_code) {
+          setStatus('Demo OTP: ' + data.demo_code, 'info');
+          // auto fill for easy demo
+          data.demo_code.split('').forEach((d, i) => { if (otpInputs[i]) otpInputs[i].value = d; });
+        } else {
+          setStatus(data.message || 'OTP dispatched.', 'info');
+        }
+        otpInputs[0]?.focus();
+      } catch (err) {
+        authSubmit.disabled = false;
+        authSubmit.innerHTML = 'Send OTP &rarr;';
+        setStatus(err.message, 'error');
+      }
+    }
+
+    authForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!otpRequested) {
+        await requestOtp();
+        return;
+      }
+
+      const contact = contactInput.value.trim();
+      const otp = otpInputs.map(i => i.value).join('');
+      if (otp.length !== 6) {
+        setStatus('Enter the complete 6-digit OTP to continue.', 'error');
+        return;
+      }
+
+      authSubmit.disabled = true;
+      authSubmit.textContent = 'Verifying...';
+      setStatus('Validating OTP...', 'info');
+
+      try {
+        const res = await fetch('/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contact, otp }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Verification failed.');
+
+        setStatus('Verified! Opening tracker...', 'info');
+        setTimeout(() => {
+          window.location.href = data.redirect_url || '/tracker';
+        }, 300);
+      } catch (err) {
+        authSubmit.disabled = false;
+        authSubmit.innerHTML = 'Verify &amp; Continue &rarr;';
+        setStatus(err.message, 'error');
+      }
+    });
+
+    resendBtn?.addEventListener('click', requestOtp);
+  </script>
+</body>
+</html>

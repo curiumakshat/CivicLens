@@ -1,5 +1,3 @@
-"""SQLAlchemy domain models for CivicLens."""
+from app.models.domain import Base, Issue, OtpCode, Report, StatusLog, User
 
-from app.models.domain import Issue, Report, StatusLog, User
-
-__all__ = ["Issue", "Report", "StatusLog", "User"]
+__all__ = ["Base", "Issue", "OtpCode", "Report", "StatusLog", "User"]

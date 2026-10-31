@@ -1,9 +1,4 @@
-"""Database engine and session helpers.
-
-The engine is configured now so the domain models in Quest 2 can use it
-without changing application wiring. SQLite is the default for the offline
-hackathon demo; the URL can later point to PostgreSQL.
-"""
+"""Database engine and session management for CivicLens."""
 
 from collections.abc import Generator
 
@@ -14,7 +9,7 @@ from app.config import settings
 
 
 class Base(DeclarativeBase):
-    """Base class for CivicLens SQLAlchemy models."""
+    pass
 
 
 connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
@@ -23,8 +18,6 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 
 def get_db() -> Generator[Session, None, None]:
-    """Yield one request-scoped database session and always close it."""
-
     db = SessionLocal()
     try:
         yield db
@@ -33,13 +26,24 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def init_db() -> None:
-    """Create all registered tables for the local prototype database.
-
-    Importing the models here ensures SQLAlchemy has registered them before
-    metadata creation, while keeping the database module independent from
-    model definitions at import time.
-    """
-
     from app import models  # noqa: F401
-
     Base.metadata.create_all(bind=engine)
+
+    # Safe SQLite column migration
+    with engine.begin() as conn:
+        try:
+            existing_cols = [
+                row[1] for row in conn.exec_driver_sql("PRAGMA table_info(users)").fetchall()
+            ]
+            if existing_cols:
+                if "google_sub" not in existing_cols:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN google_sub VARCHAR(255)")
+                    conn.exec_driver_sql("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_google_sub ON users (google_sub)")
+                if "email" not in existing_cols:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN email VARCHAR(255)")
+                if "avatar_url" not in existing_cols:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500)")
+                if "auth_provider" not in existing_cols:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN auth_provider VARCHAR(40) DEFAULT 'otp'")
+        except Exception:
+            pass

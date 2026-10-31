@@ -25,7 +25,15 @@
       </nav>
       <div class="sidebar-bottom">
         <div class="ward-card"><div class="ward-icon">⌖</div><div><span>YOUR AREA</span><strong>Jaipur · Ward 7</strong></div><button title="Change area" aria-label="Change area">⌄</button></div>
-        <button class="profile"><span class="avatar">AK</span><span><strong>Anushka K.</strong><small>Resident account</small></span><span class="more">···</span></button>
+        <button class="profile" onclick="window.location.href='/login'" title="Switch user or view account">
+          {% if user_avatar %}
+          <img src="{{ user_avatar }}" alt="{{ user_name }}" style="width:31px;height:31px;border-radius:50%;object-fit:cover;">
+          {% else %}
+          <span class="avatar">{{ (user_name[:2] if user_name else 'AK') | upper }}</span>
+          {% endif %}
+          <span><strong>{{ user_name or 'Anushka K.' }}</strong><small>{{ user_email or 'Resident account' }}</small></span>
+          <span class="more">···</span>
+        </button>
       </div>
     </aside>
 
@@ -33,7 +41,15 @@
       <header class="topbar">
         <button class="mobile-menu" id="mobile-menu" aria-label="Toggle navigation">☰</button>
         <div class="breadcrumb"><span>Jaipur Municipal Corporation</span><span class="crumb-slash">/</span><strong id="page-crumb">Public tracker</strong></div>
-        <div class="top-actions"><span class="live-indicator demo-indicator"><i></i> DEMO DATA</span><button class="icon-button" title="Notifications" aria-label="Notifications">♧<i class="notification-dot"></i></button><span class="top-avatar">AK</span></div>
+        <div class="top-actions">
+          <span class="live-indicator demo-indicator"><i></i> DEMO DATA</span>
+          {% if is_logged_in %}
+          <a href="/auth/logout" style="color:#b91c1c;background:#fde8e8;padding:6px 12px;border-radius:6px;font-weight:700;font-size:11px;text-decoration:none;" title="Sign out of CivicLens">Log out</a>
+          {% else %}
+          <a href="/login" style="color:#fff;background:#08745b;padding:6px 12px;border-radius:6px;font-weight:700;font-size:11px;text-decoration:none;" title="Resident login">Sign in</a>
+          {% endif %}
+          <span class="top-avatar">{{ (user_name[:2] if user_name else 'AK') | upper }}</span>
+        </div>
       </header>
 
       <section class="view active" id="view-tracker">

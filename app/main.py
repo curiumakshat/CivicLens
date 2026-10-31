@@ -1,7 +1,7 @@
 from pathlib import Path
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -96,3 +96,13 @@ async def public_tracker(request: Request):
             "is_logged_in": bool(user_id),
         },
     )
+
+
+@app.get("/{path:path}", include_in_schema=False)
+async def react_spa_fallback(path: str):
+    """Serve the React shell for client-side frontend routes."""
+    if path.startswith(("api/", "auth/")):
+        raise HTTPException(status_code=404, detail="Not Found")
+    if (REACT_DIST / "index.html").exists():
+        return FileResponse(REACT_DIST / "index.html")
+    raise HTTPException(status_code=404, detail="Not Found")

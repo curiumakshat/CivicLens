@@ -72,7 +72,7 @@ async def submit_report_with_image(
         "status": "success",
         "report_id": report.id,
         "reporter_id": report.reporter_id,
-        "status": report.status,
+        "report_status": report.status,
         "photo_path": report.photo_url,
         "latitude": report.latitude,
         "longitude": report.longitude,
@@ -116,7 +116,7 @@ def submit_report(
         "report_id": report.id,
         "reporter_id": report.reporter_id,
         "category": report.category,
-        "status": report.status,
+        "report_status": report.status,
         "message": "Report successfully recorded and linked to your resident account.",
     }
 

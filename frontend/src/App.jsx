@@ -10,7 +10,14 @@ const seedIssues = [
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
 function GoogleIcon() {
-  return <span className="google-icon" aria-hidden="true">G</span>;
+  return (
+    <svg className="google-icon" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+    </svg>
+  );
 }
 
 function Header({ authenticated, activePage = '', isAdmin = false, onLogout }) {
@@ -61,7 +68,7 @@ function Login({ error }) {
     setSigningIn(true);
     setAuthError('');
     try {
-      if (!supabase) throw new Error('Supabase is not configured.');
+      if (!supabase) throw new Error('Supabase is not configured. Use Google sign-in instead.');
       if (isRegistering) {
         if (!/^\d{10}$/.test(registration.mobile)) throw new Error('Enter a valid 10-digit mobile number.');
         const { data, error: registrationError } = await supabase.auth.signUp({
@@ -93,7 +100,8 @@ function Login({ error }) {
           <p className="kicker">STATE MUNICIPAL CORPORATION</p>
           <h1>{isRegistering ? 'Create your CivicLens account' : 'Resident Verification Portal'}</h1>
           <p className="intro">{isRegistering ? 'Register once to report civic issues and follow them through resolution.' : 'Sign in to report civic issues and follow them through resolution.'}</p>
-          {error && <div className="error-banner" role="alert">{error}</div>}
+          {error && <div className="error-banner" role="alert">{decodeURIComponent(error)}</div>}
+          {authError && <div className="error-banner" role="alert">{authError}</div>}
           {!isRegistering && <a className="google-button" href="/auth/google/login"><GoogleIcon /> Continue with Google</a>}
           {isRegistering && <button className="google-button" type="button" onClick={() => switchMode('login')}>Use Google instead</button>}
           <div className="or-divider"><span>OR</span></div>
@@ -104,7 +112,6 @@ function Login({ error }) {
             </>}
             <label>Email<input type="email" value={credentials.email} onChange={(event) => setCredentials({ ...credentials, email: event.target.value })} autoComplete="email" required /></label>
             <label>Password<input type="password" value={credentials.password} onChange={(event) => setCredentials({ ...credentials, password: event.target.value })} autoComplete={isRegistering ? 'new-password' : 'current-password'} minLength="8" required /></label>
-            {authError && <div className="error-banner" role="alert">{authError}</div>}
             <button className="primary-button" disabled={signingIn}>{signingIn ? (isRegistering ? 'Creating account...' : 'Signing in...') : (isRegistering ? 'Create account' : 'Sign in')} <span>→</span></button>
           </form>
           <p className="login-note">Email/password is handled securely by Supabase Auth. {isRegistering ? 'Your name and mobile number are saved with your account.' : 'Google sign-in remains available as an alternative.'}</p>
@@ -296,17 +303,41 @@ export default function App() {
   useEffect(() => {
     async function loadSession() {
       try {
-        const supabaseSession = supabase ? (await supabase.auth.getSession()).data.session : null;
-        if (supabaseSession?.access_token) {
-          const response = await fetch('/auth/supabase/session', { method: 'POST', headers: { Authorization: `Bearer ${supabaseSession.access_token}` } });
-          const data = await response.json();
-          if (!response.ok) throw new Error(data.detail || 'Unable to establish Supabase session.');
-          setSession({ loading: false, authenticated: true, user: { ...data.user, is_admin: data.user.email?.toLowerCase() === 'akshat.raj25@st.niituniversity.in' } });
-          return;
+        // 1. Try Supabase session first (if configured)
+        if (supabase) {
+          try {
+            const supabaseSession = (await supabase.auth.getSession()).data.session;
+            if (supabaseSession?.access_token) {
+              const response = await fetch('/auth/supabase/session', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${supabaseSession.access_token}` },
+              });
+              if (response.ok) {
+                const data = await response.json();
+                setSession({
+                  loading: false,
+                  authenticated: true,
+                  user: {
+                    ...data.user,
+                    is_admin: data.user.email?.toLowerCase() === 'akshat.raj25@st.niituniversity.in',
+                  },
+                });
+                return;
+              }
+            }
+          } catch {
+            // Supabase session failed, fall through to server session
+          }
         }
+
+        // 2. Fall back to server-side session (Google OAuth / OTP)
         const response = await fetch('/auth/me');
-        const data = await response.json();
-        setSession({ loading: false, authenticated: data.authenticated, user: data.user });
+        if (response.ok) {
+          const data = await response.json();
+          setSession({ loading: false, authenticated: data.authenticated, user: data.user });
+        } else {
+          setSession({ loading: false, authenticated: false, user: null });
+        }
       } catch {
         setSession({ loading: false, authenticated: false, user: null });
       }
@@ -315,7 +346,11 @@ export default function App() {
   }, []);
 
   const logout = async () => {
-    if (supabase) await supabase.auth.signOut();
+    try {
+      if (supabase) await supabase.auth.signOut();
+    } catch {
+      // Ignore Supabase signout failures
+    }
     window.location.href = '/auth/logout';
   };
 

@@ -47,6 +47,7 @@ MAX_REQUESTS_PER_WINDOW = 5
 REQUEST_WINDOW_MINUTES = 10
 
 
+
 class OtpRequest(BaseModel):
     contact: str = Field(min_length=5, max_length=120)
 

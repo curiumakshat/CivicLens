@@ -29,6 +29,12 @@ def init_db() -> None:
     from app import models  # noqa: F401
     Base.metadata.create_all(bind=engine)
 
+    # The legacy column migration is SQLite-specific. PostgreSQL deployments
+    # receive the complete schema above and should use a real migration tool
+    # for future schema changes.
+    if not settings.database_url.startswith("sqlite"):
+        return
+
     # Safe SQLite column migration
     with engine.begin() as conn:
         try:

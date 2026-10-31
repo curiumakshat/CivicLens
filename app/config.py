@@ -54,6 +54,9 @@ class Settings:
     priority_window_days: int = int(os.getenv("CIVICLENS_PRIORITY_WINDOW_DAYS", "30"))
     supabase_url: str = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
     supabase_jwks_url: str = os.getenv("SUPABASE_JWKS_URL", "").strip()
+    # Server-only Supabase Storage credentials. Never expose this to Vite.
+    supabase_secret_key: str = os.getenv("SUPABASE_SECRET_KEY", "").strip()
+    supabase_reports_bucket: str = os.getenv("SUPABASE_REPORTS_BUCKET", "civiclens-reports").strip()
 
     @property
     def has_google_oauth(self) -> bool:

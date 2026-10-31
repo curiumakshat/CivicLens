@@ -1,8 +1,5 @@
 """Report submission and listing endpoints for CivicLens."""
 
-from pathlib import Path
-import os
-import tempfile
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
@@ -12,17 +9,10 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Report, User
 from app.services.image_metadata import ImageMetadataError, extract_exif_gps, read_upload
+from app.services.supabase_storage import SupabaseStorageError, delete_report_image, upload_report_image
 
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
-ROOT = Path(__file__).resolve().parent.parent.parent
-UPLOAD_DIR = (
-    Path(tempfile.gettempdir()) / "civiclens-uploads"
-    if os.getenv("VERCEL") == "1" or os.getenv("VERCEL_ENV")
-    else ROOT / "uploads"
-)
-
-
 class ReportCreate(BaseModel):
     category: str = Field(min_length=2, max_length=80)
     title: str = Field(min_length=3, max_length=160)
@@ -54,22 +44,29 @@ async def submit_report_with_image(
     except ImageMetadataError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
 
-    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     filename = f"{uuid4().hex}{suffix}"
-    destination = UPLOAD_DIR / filename
-    destination.write_bytes(image_bytes)
+    storage_path = f"reports/{filename}"
+    try:
+        saved_storage_path = upload_report_image(storage_path, image_bytes, photo.content_type)
+    except SupabaseStorageError as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
 
     report = Report(
         reporter_id=user_id,
         category=category.strip(),
         description=f"{title.strip()}: {description.strip()}" if description.strip() else title.strip(),
-        photo_url=f"uploads/{filename}",
+        photo_url=saved_storage_path,
         latitude=latitude,
         longitude=longitude,
         verification_status="pending",
     )
     db.add(report)
-    db.commit()
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        delete_report_image(storage_path)
+        raise
     db.refresh(report)
     return {
         "status": "success",

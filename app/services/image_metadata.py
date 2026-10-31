@@ -11,7 +11,9 @@ class ImageMetadataError(ValueError):
     """Raised when an image is unsupported or has no usable GPS metadata."""
 
 
-MAX_IMAGE_BYTES = 10 * 1024 * 1024
+# Keep uploads below common serverless request-body limits so the request can
+# reach FastAPI on hosted deployments such as Vercel.
+MAX_IMAGE_BYTES = 4 * 1024 * 1024
 ALLOWED_FORMATS = {"JPEG": ".jpg", "PNG": ".png"}
 GPS_TAG = 34853
 
@@ -52,7 +54,7 @@ def extract_exif_gps(image_bytes: bytes) -> tuple[float, float, str]:
     if not image_bytes:
         raise ImageMetadataError("Upload an image file.")
     if len(image_bytes) > MAX_IMAGE_BYTES:
-        raise ImageMetadataError("Image must be 10 MB or smaller.")
+        raise ImageMetadataError("Image must be 4 MB or smaller.")
 
     try:
         with Image.open(BytesIO(image_bytes)) as image:

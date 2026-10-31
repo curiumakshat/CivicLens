@@ -7,6 +7,7 @@ const seedIssues = [
   { id: 'CVL-8816', title: 'Water leak along the footpath', location: 'Adarsh Nagar - Lane 3', category: 'Water supply', score: 64, priority: 'High', status: 'In progress', reports: 6 },
   { id: 'CVL-8710', title: 'Streetlight out near bus terminus', location: 'Bus Terminus - Platform 3', category: 'Streetlights', score: 45, priority: 'Medium', status: 'Open', reports: 5 },
 ];
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
 function GoogleIcon() {
   return <span className="google-icon" aria-hidden="true">G</span>;
@@ -130,6 +131,12 @@ function ReportForm({ onCreated }) {
     setStatus('');
     try {
       if (!form.photo) throw new Error('Choose an image with EXIF GPS metadata.');
+      if (!['image/jpeg', 'image/png'].includes(form.photo.type)) {
+        throw new Error('Only JPEG and PNG images are accepted.');
+      }
+      if (form.photo.size > MAX_UPLOAD_BYTES) {
+        throw new Error('Image is too large. Please choose an EXIF image smaller than 4 MB.');
+      }
       const payload = new FormData();
       payload.append('category', form.category);
       payload.append('title', form.title);
@@ -139,7 +146,13 @@ function ReportForm({ onCreated }) {
         method: 'POST',
         body: payload,
       });
-      const data = await response.json();
+      const responseText = await response.text();
+      let data = {};
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch {
+        data = { detail: responseText };
+      }
       if (!response.ok) throw new Error(data.detail || 'Unable to save the report.');
       onCreated({ id: `CVL-${data.report_id}`, title: form.title, category: form.category, location: 'Ward 7 - Jaipur', score: 35, priority: 'Medium', status: 'Open', reports: 1 });
       setForm({ category: '', title: '', description: '', photo: null });
@@ -158,7 +171,7 @@ function ReportForm({ onCreated }) {
         <label>Issue category<select name="category" value={form.category} onChange={update} required><option value="">Choose a category</option><option>Roads & potholes</option><option>Garbage & sanitation</option><option>Streetlights</option><option>Water supply</option><option>Drainage & flooding</option></select></label>
         <label>Short description<input name="title" value={form.title} onChange={update} maxLength="160" placeholder="e.g. Deep pothole near the school crossing" required /></label>
         <label>More details<textarea name="description" value={form.description} onChange={update} rows="4" placeholder="What happened? Is anyone at immediate risk?" /></label>
-        <label>Geotagged image<input name="photo" type="file" accept="image/jpeg,image/png" onChange={updatePhoto} required /><small className="field-help">JPEG or PNG with EXIF GPS latitude and longitude. Images without GPS are rejected.</small></label>
+        <label>Geotagged image<input name="photo" type="file" accept="image/jpeg,image/png" onChange={updatePhoto} required /><small className="field-help">JPEG or PNG with EXIF GPS latitude and longitude, smaller than 4 MB. Images without GPS are rejected.</small></label>
         <div className="location-note"><span>⌖</span><div><strong>Location comes from image EXIF</strong><small>Coordinates are extracted and normalized on the server.</small></div></div>
         <button className="primary-button" disabled={saving}>{saving ? 'Submitting...' : 'Submit report'} <span>→</span></button>
         {status && <p className="form-status" role="status">{status}</p>}

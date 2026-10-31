@@ -77,6 +77,20 @@ python -m uvicorn app.main:app --reload
 
 Open [http://localhost:8000](http://localhost:8000) in your browser.
 
+## React frontend
+
+The active web interface is now built with React and Vite. Install and build it with:
+
+```powershell
+cd frontend
+npm install
+npm run build
+cd ..
+python -m uvicorn app.main:app --reload
+```
+
+After Google authentication, `/tracker` opens the React dashboard with the Report Issue form and current Issues list visible immediately. FastAPI serves `frontend/dist` when it exists; the older Jinja templates remain only as a local fallback until the React build is created.
+
 ## Vercel deployment note
 
 Vercel functions have a read-only deployment filesystem. CivicLens now falls back to `/tmp/civiclens.db` when deployed without a database URL so the app can start, but that database is ephemeral. For persistent users and reports, configure `CIVICLENS_DATABASE_URL` or `DATABASE_URL` in Vercel with a PostgreSQL/Supabase connection string. The `psycopg` driver is included in `requirements.txt`.

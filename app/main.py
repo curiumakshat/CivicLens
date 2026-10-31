@@ -2,6 +2,7 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
@@ -14,6 +15,7 @@ from app.routes.reports import router as reports_router
 
 
 ROOT = Path(__file__).resolve().parent.parent
+REACT_DIST = ROOT / "frontend" / "dist"
 templates = Jinja2Templates(directory=ROOT / "templates")
 
 
@@ -31,6 +33,8 @@ app = FastAPI(
 )
 
 app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
+if (REACT_DIST / "assets").exists():
+    app.mount("/assets", StaticFiles(directory=REACT_DIST / "assets"), name="react-assets")
 
 # Mount API Routers
 app.include_router(health_router)
@@ -51,6 +55,8 @@ app.add_middleware(
 @app.get("/login", include_in_schema=False)
 async def login_page(request: Request):
     """Resident Login Portal."""
+    if (REACT_DIST / "index.html").exists():
+        return FileResponse(REACT_DIST / "index.html")
     user_id = request.session.get("user_id")
     error = request.query_params.get("error")
     return templates.TemplateResponse(
@@ -71,6 +77,8 @@ async def login_page(request: Request):
 @app.get("/dashboard", include_in_schema=False)
 async def public_tracker(request: Request):
     """CivicLens Public Tracker & Issue Resolution Dashboard."""
+    if (REACT_DIST / "index.html").exists():
+        return FileResponse(REACT_DIST / "index.html")
     user_id = request.session.get("user_id")
     return templates.TemplateResponse(
         request=request,

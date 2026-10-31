@@ -23,24 +23,13 @@ def test_01_civiclens_starts_and_health_check():
     assert "CivicLens" in data["service"]
 
 
-def test_02_login_page_renders_continue_with_google():
-    """2. Login page displays Continue with Google button, OR divider, and OTP form."""
+def test_02_login_page_serves_react_entrypoint():
+    """2. Login page serves the React frontend entrypoint."""
     response = client.get("/login")
     assert response.status_code == 200
     html = response.text
-
-    # Google branding & button
-    assert "Continue with Google" in html
-    assert "/auth/google/login" in html
-    assert "<svg class=\"google-icon\"" in html
-
-    # OR divider
-    assert "auth-divider-or" in html
-    assert "<span>OR</span>" in html
-
-    # OTP form
-    assert "auth-form" in html
-    assert "Registered Mobile Number or Gmail" in html
+    assert '<div id="root"></div>' in html
+    assert "/assets/" in html
 
 
 def test_03_google_login_redirects_to_google_oauth():
@@ -203,11 +192,10 @@ def test_07_unverified_email_is_rejected(mock_token):
 
 
 def test_08_failed_authentication_error_query_param():
-    """9. Google cancellation or error query param displays graceful error banner."""
+    """9. Google cancellation or error query param returns the React app."""
     res = client.get("/auth/google/callback?error=access_denied", follow_redirects=True)
     assert res.status_code == 200
-    assert "auth-error-banner" in res.text
-    assert "access_denied" in res.text
+    assert '<div id="root"></div>' in res.text
 
 
 def test_09_existing_otp_functionality_intact():

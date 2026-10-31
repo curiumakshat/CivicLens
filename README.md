@@ -76,3 +76,7 @@ python -m uvicorn app.main:app --reload
 ```
 
 Open [http://localhost:8000](http://localhost:8000) in your browser.
+
+## Vercel deployment note
+
+Vercel functions have a read-only deployment filesystem. CivicLens now falls back to `/tmp/civiclens.db` when deployed without a database URL so the app can start, but that database is ephemeral. For persistent users and reports, configure `CIVICLENS_DATABASE_URL` or `DATABASE_URL` in Vercel with a PostgreSQL/Supabase connection string. The `psycopg` driver is included in `requirements.txt`.

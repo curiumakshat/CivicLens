@@ -77,6 +77,12 @@ python -m uvicorn app.main:app --reload
 
 Open [http://localhost:8000](http://localhost:8000) in your browser.
 
+## Geotagged image reports
+
+`POST /api/reports/upload` accepts only JPEG or PNG uploads that contain valid EXIF GPS latitude and longitude. The server validates the actual image bytes, rejects missing or invalid GPS metadata, extracts coordinates to six decimal places, stores the original file under `uploads/`, and saves the normalized coordinates on the report. The React report form uses this multipart endpoint and requires an image.
+
+Vercel uses its writable temporary directory for uploaded files; production deployments should move images to object storage because temporary serverless storage is not persistent.
+
 ## React frontend
 
 The active web interface is now built with React and Vite. Install and build it with:

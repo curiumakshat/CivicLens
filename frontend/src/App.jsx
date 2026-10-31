@@ -51,26 +51,32 @@ function Login({ error }) {
 }
 
 function ReportForm({ onCreated }) {
-  const [form, setForm] = useState({ category: '', title: '', description: '' });
+  const [form, setForm] = useState({ category: '', title: '', description: '', photo: null });
   const [status, setStatus] = useState('');
   const [saving, setSaving] = useState(false);
 
   const update = (event) => setForm({ ...form, [event.target.name]: event.target.value });
+  const updatePhoto = (event) => setForm({ ...form, photo: event.target.files?.[0] || null });
 
   async function submit(event) {
     event.preventDefault();
     setSaving(true);
     setStatus('');
     try {
-      const response = await fetch('/api/reports', {
+      if (!form.photo) throw new Error('Choose an image with EXIF GPS metadata.');
+      const payload = new FormData();
+      payload.append('category', form.category);
+      payload.append('title', form.title);
+      payload.append('description', form.description);
+      payload.append('photo', form.photo);
+      const response = await fetch('/api/reports/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, latitude: 26.9124, longitude: 75.7873 }),
+        body: payload,
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || 'Unable to save the report.');
       onCreated({ id: `CVL-${data.report_id}`, title: form.title, category: form.category, location: 'Ward 7 - Jaipur', score: 35, priority: 'Medium', status: 'Open', reports: 1 });
-      setForm({ category: '', title: '', description: '' });
+      setForm({ category: '', title: '', description: '', photo: null });
       setStatus('Report submitted successfully.');
     } catch (error) {
       setStatus(error.message);
@@ -86,7 +92,8 @@ function ReportForm({ onCreated }) {
         <label>Issue category<select name="category" value={form.category} onChange={update} required><option value="">Choose a category</option><option>Roads & potholes</option><option>Garbage & sanitation</option><option>Streetlights</option><option>Water supply</option><option>Drainage & flooding</option></select></label>
         <label>Short description<input name="title" value={form.title} onChange={update} maxLength="160" placeholder="e.g. Deep pothole near the school crossing" required /></label>
         <label>More details<textarea name="description" value={form.description} onChange={update} rows="4" placeholder="What happened? Is anyone at immediate risk?" /></label>
-        <div className="location-note"><span>⌖</span><div><strong>Ward 7, Jaipur</strong><small>Approximate demo location - exact GPS comes next.</small></div></div>
+        <label>Geotagged image<input name="photo" type="file" accept="image/jpeg,image/png" onChange={updatePhoto} required /><small className="field-help">JPEG or PNG with EXIF GPS latitude and longitude. Images without GPS are rejected.</small></label>
+        <div className="location-note"><span>⌖</span><div><strong>Location comes from image EXIF</strong><small>Coordinates are extracted and normalized on the server.</small></div></div>
         <button className="primary-button" disabled={saving}>{saving ? 'Submitting...' : 'Submit report'} <span>→</span></button>
         {status && <p className="form-status" role="status">{status}</p>}
       </form>

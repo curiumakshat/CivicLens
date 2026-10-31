@@ -11,7 +11,7 @@ function GoogleIcon() {
   return <span className="google-icon" aria-hidden="true">G</span>;
 }
 
-function Header({ authenticated, onLogout }) {
+function Header({ authenticated, activePage = '', onLogout }) {
   return (
     <header className="react-header">
       <a className="react-brand" href="/">
@@ -19,7 +19,11 @@ function Header({ authenticated, onLogout }) {
         <span><strong>Civic<span>Lens</span></strong><small>HACKNOVATE PS 9</small></span>
       </a>
       {authenticated ? (
-        <button className="header-link" onClick={onLogout}>Logout</button>
+        <nav className="react-nav" aria-label="Resident navigation">
+          <a className={activePage === 'report' ? 'active' : ''} href="/report">Report</a>
+          <a className={activePage === 'tracker' ? 'active' : ''} href="/tracker">Tracker</a>
+          <button className="header-link" onClick={onLogout}>Logout</button>
+        </nav>
       ) : (
         <nav className="react-nav" aria-label="Authentication">
           <a className="active" href="/">Login</a>
@@ -113,16 +117,61 @@ function Issues({ issues }) {
   );
 }
 
-function Dashboard({ user, onLogout }) {
-  const [issues, setIssues] = useState(seedIssues);
+function ReportPage({ user, onLogout }) {
   const userName = user?.name || 'Resident';
-  const addIssue = (issue) => setIssues((current) => [issue, ...current]);
   return (
     <div className="dashboard-layout">
-      <Header authenticated onLogout={onLogout} />
+      <Header authenticated activePage="report" onLogout={onLogout} />
       <main className="dashboard-main">
         <div className="welcome-row"><div><p className="eyebrow-react">JAIPUR · WARD 7</p><h1>Welcome, <em>{userName}</em></h1><p>Report a problem and see how your neighbourhood is progressing.</p></div><div className="signed-in">Verified resident</div></div>
-        <div className="dashboard-grid"><ReportForm onCreated={addIssue} /><Issues issues={issues} /></div>
+        <div className="dashboard-grid single-panel"><ReportForm onCreated={() => {}} /></div>
+      </main>
+    </div>
+  );
+}
+
+function reportTitle(description, category) {
+  return description?.split(':')[0] || category || 'Civic issue';
+}
+
+function TrackerPage({ user, onLogout }) {
+  const [myReports, setMyReports] = useState([]);
+  const [localReports, setLocalReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/reports/my-reports').then((response) => response.json()),
+      fetch('/api/reports/locality').then((response) => response.json()),
+    ]).then(([mine, local]) => {
+      setMyReports(mine.reports || []);
+      setLocalReports(local.reports || []);
+    }).finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="dashboard-layout">
+      <Header authenticated activePage="tracker" onLogout={onLogout} />
+      <main className="dashboard-main">
+        <div className="welcome-row"><div><p className="eyebrow-react">JAIPUR · WARD 7</p><h1>Your civic tracker</h1><p>Follow your submissions and stay informed about issues near you.</p></div><div className="signed-in">{user?.name || 'Verified resident'}</div></div>
+        <div className="tracker-grid">
+          <section className="panel-react tracker-panel">
+            <div className="panel-heading"><div><p className="eyebrow-react">YOUR SUBMISSIONS</p><h2>My complaints <span className="count-chip">{myReports.length}</span></h2><p>Updates on issues you have reported.</p></div><a className="text-link" href="/report">Raise an issue →</a></div>
+            <div className="tracker-list">
+              {loading && <p className="empty-state">Loading your complaints...</p>}
+              {!loading && myReports.length === 0 && <p className="empty-state">You have not submitted a complaint yet.</p>}
+              {myReports.map((report) => <article className="tracker-row" key={report.id}><div><strong>{reportTitle(report.description, report.category)}</strong><p>{report.category} <span>·</span> Submitted {new Date(report.created_at).toLocaleDateString()}</p></div><span className={`status status-${report.status}`}>{report.status}</span></article>)}
+            </div>
+          </section>
+          <section className="panel-react tracker-panel">
+            <div className="panel-heading"><div><p className="eyebrow-react">COMMUNITY WATCH</p><h2>Issues in your locality <span className="count-chip">{localReports.length}</span></h2><p>Recent reports raised by residents around Ward 7.</p></div><span className="map-chip">Ward 7</span></div>
+            <div className="tracker-list">
+              {loading && <p className="empty-state">Loading locality issues...</p>}
+              {!loading && localReports.length === 0 && <p className="empty-state">No locality issues have been reported yet.</p>}
+              {localReports.map((report) => <article className="tracker-row" key={report.id}><div><strong>{reportTitle(report.description, report.category)}</strong><p>{report.category} <span>·</span> {new Date(report.created_at).toLocaleDateString()}</p></div><span className={`status status-${report.status}`}>{report.status}</span></article>)}
+            </div>
+          </section>
+        </div>
       </main>
     </div>
   );
@@ -137,6 +186,11 @@ export default function App() {
   }, []);
 
   if (session.loading) return <div className="loading-screen">Loading CivicLens...</div>;
-  if (session.authenticated) return <Dashboard user={session.user} onLogout={() => { window.location.href = '/auth/logout'; }} />;
+  if (session.authenticated) {
+    const page = window.location.pathname === '/tracker' ? 'tracker' : 'report';
+    return page === 'tracker'
+      ? <TrackerPage user={session.user} onLogout={() => { window.location.href = '/auth/logout'; }} />
+      : <ReportPage user={session.user} onLogout={() => { window.location.href = '/auth/logout'; }} />;
+  }
   return <Login error={error} />;
 }

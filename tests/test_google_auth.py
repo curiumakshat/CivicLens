@@ -70,7 +70,7 @@ def test_04_successful_google_login_creates_and_retrieves_user(mock_token):
     test_client = TestClient(app)
     res = test_client.get("/auth/google/callback", follow_redirects=False)
     assert res.status_code == 303
-    assert res.headers["location"] == "/tracker"
+    assert res.headers["location"] == "/report"
     assert "civiclens_verified" in res.headers.get("set-cookie", "")
 
     # Check database
@@ -211,4 +211,4 @@ def test_09_existing_otp_functionality_intact():
     res_verify = test_client.post("/auth/verify-otp", json={"contact": "9123456789", "otp": demo_code})
     assert res_verify.status_code == 200
     assert res_verify.json()["verified"] is True
-    assert res_verify.json()["redirect_url"] == "/tracker"
+    assert res_verify.json()["redirect_url"] == "/report"

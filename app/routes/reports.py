@@ -147,3 +147,23 @@ def get_my_reports(request: Request, db: Session = Depends(get_db)):
             for r in reports
         ]
     }
+
+
+@router.get("/locality")
+def get_locality_reports(db: Session = Depends(get_db)):
+    """Return recent reports raised across the resident's locality feed."""
+    reports = db.query(Report).order_by(Report.created_at.desc()).limit(50).all()
+    return {
+        "reports": [
+            {
+                "id": r.id,
+                "category": r.category,
+                "description": r.description,
+                "latitude": r.latitude,
+                "longitude": r.longitude,
+                "created_at": r.created_at.isoformat(),
+                "status": r.verification_status,
+            }
+            for r in reports
+        ]
+    }

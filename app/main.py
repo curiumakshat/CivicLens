@@ -75,6 +75,7 @@ async def login_page(request: Request):
 
 @app.get("/tracker", include_in_schema=False)
 @app.get("/dashboard", include_in_schema=False)
+@app.get("/report", include_in_schema=False)
 async def public_tracker(request: Request):
     """CivicLens Public Tracker & Issue Resolution Dashboard."""
     if (REACT_DIST / "index.html").exists():

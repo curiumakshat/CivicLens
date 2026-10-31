@@ -225,7 +225,7 @@ async def google_callback(
     request.session["google_sub"] = user.google_sub
 
     # Set secure HTTP-only cookie
-    redirect_target = RedirectResponse(url="/tracker", status_code=status.HTTP_303_SEE_OTHER)
+    redirect_target = RedirectResponse(url="/report", status_code=status.HTTP_303_SEE_OTHER)
     is_https = request.url.scheme == "https"
     redirect_target.set_cookie(
         "civiclens_verified",
@@ -380,7 +380,7 @@ def verify_otp(
 
     return {
         "verified": True,
-        "redirect_url": "/tracker",
+        "redirect_url": "/report",
         "user": {
             "id": user.id,
             "contact": user.contact,

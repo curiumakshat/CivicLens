@@ -11,7 +11,7 @@ function GoogleIcon() {
   return <span className="google-icon" aria-hidden="true">G</span>;
 }
 
-function Header({ authenticated, activePage = '', onLogout }) {
+function Header({ authenticated, activePage = '', isAdmin = false, onLogout }) {
   return (
     <header className="react-header">
       <a className="react-brand" href="/">
@@ -22,6 +22,7 @@ function Header({ authenticated, activePage = '', onLogout }) {
         <nav className="react-nav" aria-label="Resident navigation">
           <a className={activePage === 'report' ? 'active' : ''} href="/report">Report</a>
           <a className={activePage === 'tracker' ? 'active' : ''} href="/tracker">Tracker</a>
+          {isAdmin && <a className={activePage === 'admin' ? 'active' : ''} href="/admin">Admin</a>}
           <button className="header-link" onClick={onLogout}>Logout</button>
         </nav>
       ) : (
@@ -121,7 +122,7 @@ function ReportPage({ user, onLogout }) {
   const userName = user?.name || 'Resident';
   return (
     <div className="dashboard-layout">
-      <Header authenticated activePage="report" onLogout={onLogout} />
+      <Header authenticated activePage="report" isAdmin={user?.is_admin} onLogout={onLogout} />
       <main className="dashboard-main">
         <div className="welcome-row"><div><p className="eyebrow-react">JAIPUR · WARD 7</p><h1>Welcome, <em>{userName}</em></h1><p>Report a problem and see how your neighbourhood is progressing.</p></div><div className="signed-in">Verified resident</div></div>
         <div className="dashboard-grid single-panel"><ReportForm onCreated={() => {}} /></div>
@@ -132,6 +133,10 @@ function ReportPage({ user, onLogout }) {
 
 function reportTitle(description, category) {
   return description?.split(':')[0] || category || 'Civic issue';
+}
+
+function statusLabel(status) {
+  return status === 'in_progress' ? 'In progress' : status === 'resolved' ? 'Resolved' : 'Pending';
 }
 
 function TrackerPage({ user, onLogout }) {
@@ -151,7 +156,7 @@ function TrackerPage({ user, onLogout }) {
 
   return (
     <div className="dashboard-layout">
-      <Header authenticated activePage="tracker" onLogout={onLogout} />
+      <Header authenticated activePage="tracker" isAdmin={user?.is_admin} onLogout={onLogout} />
       <main className="dashboard-main">
         <div className="welcome-row"><div><p className="eyebrow-react">JAIPUR · WARD 7</p><h1>Your civic tracker</h1><p>Follow your submissions and stay informed about issues near you.</p></div><div className="signed-in">{user?.name || 'Verified resident'}</div></div>
         <div className="tracker-grid">
@@ -160,7 +165,7 @@ function TrackerPage({ user, onLogout }) {
             <div className="tracker-list">
               {loading && <p className="empty-state">Loading your complaints...</p>}
               {!loading && myReports.length === 0 && <p className="empty-state">You have not submitted a complaint yet.</p>}
-              {myReports.map((report) => <article className="tracker-row" key={report.id}><div><strong>{reportTitle(report.description, report.category)}</strong><p>{report.category} <span>·</span> Submitted {new Date(report.created_at).toLocaleDateString()}</p></div><span className={`status status-${report.status}`}>{report.status}</span></article>)}
+              {myReports.map((report) => <article className="tracker-row" key={report.id}><div><strong>{reportTitle(report.description, report.category)}</strong><p>{report.category} <span>·</span> Submitted {new Date(report.created_at).toLocaleDateString()}</p></div><span className={`status status-${report.status}`}>{statusLabel(report.status)}</span></article>)}
             </div>
           </section>
           <section className="panel-react tracker-panel">
@@ -168,10 +173,46 @@ function TrackerPage({ user, onLogout }) {
             <div className="tracker-list">
               {loading && <p className="empty-state">Loading locality issues...</p>}
               {!loading && localReports.length === 0 && <p className="empty-state">No locality issues have been reported yet.</p>}
-              {localReports.map((report) => <article className="tracker-row" key={report.id}><div><strong>{reportTitle(report.description, report.category)}</strong><p>{report.category} <span>·</span> {new Date(report.created_at).toLocaleDateString()}</p></div><span className={`status status-${report.status}`}>{report.status}</span></article>)}
+              {localReports.map((report) => <article className="tracker-row" key={report.id}><div><strong>{reportTitle(report.description, report.category)}</strong><p>{report.category} <span>·</span> {new Date(report.created_at).toLocaleDateString()}</p></div><span className={`status status-${report.status}`}>{statusLabel(report.status)}</span></article>)}
             </div>
           </section>
         </div>
+      </main>
+    </div>
+  );
+}
+
+function AdminPage({ user, onLogout }) {
+  const [data, setData] = useState({ alerts: [], reports: [] });
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState('');
+
+  const load = () => fetch('/api/admin/overview').then((response) => {
+    if (!response.ok) throw new Error('Admin access denied.');
+    return response.json();
+  }).then(setData).catch((error) => setMessage(error.message)).finally(() => setLoading(false));
+
+  useEffect(() => { load(); }, []);
+
+  async function updateStatus(reportId, nextStatus) {
+    const response = await fetch(`/api/admin/reports/${reportId}/status`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(nextStatus),
+    });
+    if (!response.ok) { setMessage('Unable to update report status.'); return; }
+    setData((current) => ({ ...current, reports: current.reports.map((report) => report.id === reportId ? { ...report, status: nextStatus } : report) }));
+    setMessage('Report status updated.');
+  }
+
+  return (
+    <div className="dashboard-layout">
+      <Header authenticated activePage="admin" isAdmin onLogout={onLogout} />
+      <main className="dashboard-main">
+        <div className="welcome-row"><div><p className="eyebrow-react">ADMINISTRATION · CIVICLENS</p><h1>Operations control room</h1><p>Prioritize alerts using frequency, severity, and ward population.</p></div><div className="signed-in">{user?.email}</div></div>
+        {message && <p className="form-status" role="status">{message}</p>}
+        <section className="admin-alert-grid">
+          <div className="panel-react admin-panel"><div className="panel-heading"><div><p className="eyebrow-react">PRIORITY ENGINE</p><h2>Alert queue <span className="count-chip">{data.alerts.length}</span></h2><p>Explainable ranking for municipal response.</p></div></div><div className="tracker-list">{loading && <p className="empty-state">Loading alerts...</p>}{!loading && !data.alerts.length && <p className="empty-state">No alerts yet.</p>}{data.alerts.map((alert) => <article className="tracker-row" key={`${alert.ward}-${alert.category}`}><div><strong>{alert.category}</strong><p>{alert.ward} · {alert.reports} reports · population {alert.population == null ? 'not verified' : alert.population.toLocaleString()} · severity {alert.severity} ({alert.severity_source})</p><small className="score-breakdown">Frequency {alert.score_breakdown.frequency_score} · Severity {alert.score_breakdown.severity_score} · Population {alert.score_breakdown.population_score ?? 'n/a'} · {alert.window_days}-day window</small></div><div className="admin-alert-meta"><span className={`priority ${alert.level.toLowerCase()}`}>{alert.level}</span><b>{alert.score}</b></div></article>)}</div></div>
+          <div className="panel-react admin-panel"><div className="panel-heading"><div><p className="eyebrow-react">MODERATION QUEUE</p><h2>Resident reports <span className="count-chip">{data.reports.length}</span></h2><p>Move each report through the resident-visible lifecycle.</p></div></div><div className="tracker-list">{data.reports.map((report) => <article className="tracker-row admin-report-row" key={report.id}><div><strong>#{report.id} · {report.title}</strong><p>{report.category} · {report.ward}</p></div><div className="admin-controls"><select value={report.status} onChange={(event) => updateStatus(report.id, { status: event.target.value })} aria-label={`Status for report ${report.id}`}><option value="pending">Pending</option><option value="in_progress">In progress</option><option value="resolved">Resolved</option></select><select value={report.severity || ''} onChange={(event) => updateStatus(report.id, { status: report.status, severity: event.target.value ? Number(event.target.value) : null })} aria-label={`Severity for report ${report.id}`}><option value="">Severity</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div></article>)}</div></div>
+        </section>
       </main>
     </div>
   );
@@ -187,6 +228,7 @@ export default function App() {
 
   if (session.loading) return <div className="loading-screen">Loading CivicLens...</div>;
   if (session.authenticated) {
+    if (window.location.pathname === '/admin' && session.user?.is_admin) return <AdminPage user={session.user} onLogout={() => { window.location.href = '/auth/logout'; }} />;
     const page = window.location.pathname === '/tracker' ? 'tracker' : 'report';
     return page === 'tracker'
       ? <TrackerPage user={session.user} onLogout={() => { window.location.href = '/auth/logout'; }} />

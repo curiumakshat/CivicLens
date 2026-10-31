@@ -226,7 +226,8 @@ async def google_callback(
     request.session["google_sub"] = user.google_sub
 
     # Set secure HTTP-only cookie
-    redirect_target = RedirectResponse(url="/report", status_code=status.HTTP_303_SEE_OTHER)
+    landing_page = "/admin" if (user.email or "").strip().lower() == settings.admin_email else "/report"
+    redirect_target = RedirectResponse(url=landing_page, status_code=status.HTTP_303_SEE_OTHER)
     is_https = request.url.scheme == "https"
     redirect_target.set_cookie(
         "civiclens_verified",
@@ -417,5 +418,6 @@ def current_user(request: Request, db: Session = Depends(get_db)) -> dict[str, A
             "provider": user.auth_provider,
             "is_verified": user.is_verified,
             "trust_score": user.trust_score,
+            "is_admin": (user.email or "").strip().lower() == settings.admin_email,
         },
     }

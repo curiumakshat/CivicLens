@@ -27,13 +27,12 @@ def get_db() -> Generator[Session, None, None]:
 
 def init_db() -> None:
     from app import models  # noqa: F401
-    Base.metadata.create_all(bind=engine)
-
-    # The legacy column migration is SQLite-specific. PostgreSQL deployments
-    # receive the complete schema above and should use a real migration tool
-    # for future schema changes.
     if not settings.database_url.startswith("sqlite"):
+        # PostgreSQL schema changes are managed by Alembic. Do not let an app
+        # startup partially mutate a production database through create_all.
         return
+
+    Base.metadata.create_all(bind=engine)
 
     # Safe SQLite column migration
     with engine.begin() as conn:

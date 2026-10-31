@@ -75,6 +75,7 @@ async def submit_report_with_image(
         "status": "success",
         "report_id": report.id,
         "reporter_id": report.reporter_id,
+        "status": report.status,
         "photo_path": report.photo_url,
         "latitude": report.latitude,
         "longitude": report.longitude,
@@ -118,6 +119,7 @@ def submit_report(
         "report_id": report.id,
         "reporter_id": report.reporter_id,
         "category": report.category,
+        "status": report.status,
         "message": "Report successfully recorded and linked to your resident account.",
     }
 
@@ -142,7 +144,7 @@ def get_my_reports(request: Request, db: Session = Depends(get_db)):
                 "category": r.category,
                 "description": r.description,
                 "created_at": r.created_at.isoformat(),
-                "status": r.verification_status,
+                "status": r.status,
             }
             for r in reports
         ]
@@ -162,7 +164,7 @@ def get_locality_reports(db: Session = Depends(get_db)):
                 "latitude": r.latitude,
                 "longitude": r.longitude,
                 "created_at": r.created_at.isoformat(),
-                "status": r.verification_status,
+                "status": r.status,
             }
             for r in reports
         ]

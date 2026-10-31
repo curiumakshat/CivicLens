@@ -95,16 +95,57 @@ class Report(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     reporter_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     issue_id: Mapped[int | None] = mapped_column(ForeignKey("issues.id"), index=True, nullable=True)
+    ward_id: Mapped[int | None] = mapped_column(ForeignKey("wards.id"), index=True, nullable=True)
     category: Mapped[str] = mapped_column(String(80), index=True)
     description: Mapped[str] = mapped_column(Text)
     photo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     latitude: Mapped[float] = mapped_column(Float)
     longitude: Mapped[float] = mapped_column(Float)
     verification_status: Mapped[str] = mapped_column(String(30), default="pending", nullable=False)
+    status: Mapped[str] = mapped_column(String(30), default="pending", nullable=False, index=True)
+    severity: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
 
     reporter: Mapped[User] = relationship(back_populates="reports")
     issue: Mapped[Issue | None] = relationship(back_populates="reports")
+    ward: Mapped["Ward | None"] = relationship(back_populates="reports")
+    status_logs: Mapped[list["ReportStatusLog"]] = relationship(
+        back_populates="report", cascade="all, delete-orphan"
+    )
+
+
+class Ward(Base):
+    """Verified locality metadata used by the priority engine."""
+
+    __tablename__ = "wards"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), unique=True, index=True)
+    population: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    population_source: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    boundary_geojson: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
+
+    reports: Mapped[list[Report]] = relationship(back_populates="ward")
+
+
+class ReportStatusLog(Base):
+    """Immutable audit record for citizen-report lifecycle changes."""
+
+    __tablename__ = "report_status_log"
+    __table_args__ = (Index("ix_report_status_log_report_created", "report_id", "created_at"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    report_id: Mapped[int] = mapped_column(ForeignKey("reports.id", ondelete="CASCADE"), index=True)
+    changed_by_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    from_status: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    to_status: Mapped[str] = mapped_column(String(30), nullable=False)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+
+    report: Mapped[Report] = relationship(back_populates="status_logs")
+    changed_by: Mapped[User] = relationship()
 
 
 class StatusLog(Base):

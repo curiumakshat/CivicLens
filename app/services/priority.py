@@ -58,9 +58,10 @@ def build_alerts(
     alerts = []
     for (ward, category), items in groups.items():
         frequency = len(items)
-        assigned_severities = [item.severity for item in items if item.severity is not None]
-        severity = round(sum(assigned_severities) / len(assigned_severities), 2) if assigned_severities else severity_for_category(category)
-        severity_source = "admin_assigned" if assigned_severities else "configured_category_suggestion"
+        # Severity is derived automatically from the configured category
+        # mapping. It is not editable from the admin moderation queue.
+        severity = severity_for_category(category)
+        severity_source = "configured_category_formula"
         population = populations.get(ward)
         frequency_score = round((frequency / max_frequency) * 100, 1)
         severity_score = round((severity / 5) * 100, 1)

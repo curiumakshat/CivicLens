@@ -69,7 +69,7 @@ def test_priority_uses_ward_population_and_real_report_attributes():
     db.commit()
     alerts = build_alerts([report], {ward.name: ward}, window_days=30)
     assert alerts[0]["population"] == 50_000
-    assert alerts[0]["severity_source"] == "admin_assigned"
+    assert alerts[0]["severity_source"] == "configured_category_formula"
     assert alerts[0]["score_breakdown"]["population_score"] == 100.0
 
 

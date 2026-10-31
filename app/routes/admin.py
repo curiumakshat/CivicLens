@@ -27,7 +27,6 @@ def require_admin(request: Request, db: Session = Depends(get_db)) -> User:
 
 class StatusUpdate(BaseModel):
     status: str = Field(pattern="^(pending|in_progress|resolved)$")
-    severity: int | None = Field(default=None, ge=1, le=5)
     note: str | None = Field(default=None, max_length=500)
 
 
@@ -69,8 +68,6 @@ def update_report_status(
         raise HTTPException(status_code=404, detail="Report not found.")
     previous_status = report.status
     report.status = payload.status
-    if payload.severity is not None:
-        report.severity = payload.severity
     if previous_status != payload.status:
         if db.bind.dialect.name == "postgresql":
             db.execute(text("SELECT set_config('civiclens.changed_by_id', :changed_by_id, true)"), {"changed_by_id": str(_.id)})

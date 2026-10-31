@@ -42,9 +42,18 @@ function Header({ authenticated, activePage = '', isAdmin = false, onLogout }) {
 }
 
 function Login({ error }) {
+  const [mode, setMode] = useState(window.location.hash === '#register' ? 'register' : 'login');
   const [credentials, setCredentials] = useState({ email: '', password: '' });
+  const [registration, setRegistration] = useState({ name: '', mobile: '' });
   const [authError, setAuthError] = useState('');
   const [signingIn, setSigningIn] = useState(false);
+  const isRegistering = mode === 'register';
+
+  function switchMode(nextMode) {
+    setAuthError('');
+    setMode(nextMode);
+    window.history.replaceState({}, '', nextMode === 'register' ? '/#register' : '/');
+  }
 
   async function submitEmailPassword(event) {
     event.preventDefault();
@@ -52,9 +61,21 @@ function Login({ error }) {
     setAuthError('');
     try {
       if (!supabase) throw new Error('Supabase is not configured.');
-      const { error: loginError } = await supabase.auth.signInWithPassword(credentials);
-      if (loginError) throw loginError;
-      window.location.reload();
+      if (isRegistering) {
+        if (!/^\d{10}$/.test(registration.mobile)) throw new Error('Enter a valid 10-digit mobile number.');
+        const { data, error: registrationError } = await supabase.auth.signUp({
+          email: credentials.email,
+          password: credentials.password,
+          options: { data: { full_name: registration.name.trim(), mobile_number: registration.mobile } },
+        });
+        if (registrationError) throw registrationError;
+        if (data.session) window.location.reload();
+        else setAuthError('Registration successful. Check your email to confirm your account, then sign in.');
+      } else {
+        const { error: loginError } = await supabase.auth.signInWithPassword(credentials);
+        if (loginError) throw loginError;
+        window.location.reload();
+      }
     } catch (loginError) {
       setAuthError(loginError.message);
     } finally {
@@ -69,18 +90,26 @@ function Login({ error }) {
         <section className="auth-card-react" id="register">
           <div className="shield">✓</div>
           <p className="kicker">STATE MUNICIPAL CORPORATION</p>
-          <h1>Resident Verification Portal</h1>
-          <p className="intro">Sign in to report civic issues and follow them through resolution.</p>
+          <h1>{isRegistering ? 'Create your CivicLens account' : 'Resident Verification Portal'}</h1>
+          <p className="intro">{isRegistering ? 'Register once to report civic issues and follow them through resolution.' : 'Sign in to report civic issues and follow them through resolution.'}</p>
           {error && <div className="error-banner" role="alert">{error}</div>}
-          <a className="google-button" href="/auth/google/login"><GoogleIcon /> Continue with Google</a>
+          {!isRegistering && <a className="google-button" href="/auth/google/login"><GoogleIcon /> Continue with Google</a>}
+          {isRegistering && <button className="google-button" type="button" onClick={() => switchMode('login')}>Use Google instead</button>}
           <div className="or-divider"><span>OR</span></div>
           <form className="password-form" onSubmit={submitEmailPassword}>
+            {isRegistering && <>
+              <label>Full name<input type="text" value={registration.name} onChange={(event) => setRegistration({ ...registration, name: event.target.value })} autoComplete="name" required /></label>
+              <label>10-digit mobile number<input type="tel" value={registration.mobile} onChange={(event) => setRegistration({ ...registration, mobile: event.target.value.replace(/\D/g, '').slice(0, 10) })} inputMode="numeric" pattern="[0-9]{10}" autoComplete="tel" required /></label>
+            </>}
             <label>Email<input type="email" value={credentials.email} onChange={(event) => setCredentials({ ...credentials, email: event.target.value })} autoComplete="email" required /></label>
-            <label>Password<input type="password" value={credentials.password} onChange={(event) => setCredentials({ ...credentials, password: event.target.value })} autoComplete="current-password" minLength="8" required /></label>
+            <label>Password<input type="password" value={credentials.password} onChange={(event) => setCredentials({ ...credentials, password: event.target.value })} autoComplete={isRegistering ? 'new-password' : 'current-password'} minLength="8" required /></label>
             {authError && <div className="error-banner" role="alert">{authError}</div>}
-            <button className="primary-button" disabled={signingIn}>{signingIn ? 'Signing in...' : 'Sign in'} <span>→</span></button>
+            <button className="primary-button" disabled={signingIn}>{signingIn ? (isRegistering ? 'Creating account...' : 'Signing in...') : (isRegistering ? 'Create account' : 'Sign in')} <span>→</span></button>
           </form>
-          <p className="login-note">Email/password is handled securely by Supabase Auth. Google sign-in remains available as an alternative.</p>
+          <p className="login-note">Email/password is handled securely by Supabase Auth. {isRegistering ? 'Your name and mobile number are saved with your account.' : 'Google sign-in remains available as an alternative.'}</p>
+          <button className="mode-switch" type="button" onClick={() => switchMode(isRegistering ? 'login' : 'register')}>
+            {isRegistering ? 'Already have an account? Sign in' : 'New resident? Create an account'}
+          </button>
         </section>
       </main>
     </div>

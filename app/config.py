@@ -52,6 +52,8 @@ class Settings:
     demo_mode: bool = os.getenv("CIVICLENS_DEMO_MODE", "true").lower() == "true"
     admin_email: str = os.getenv("CIVICLENS_ADMIN_EMAIL", "akshat.raj25@st.niituniversity.in").strip().lower()
     priority_window_days: int = int(os.getenv("CIVICLENS_PRIORITY_WINDOW_DAYS", "30"))
+    supabase_url: str = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
+    supabase_jwks_url: str = os.getenv("SUPABASE_JWKS_URL", "").strip()
 
     @property
     def has_google_oauth(self) -> bool:

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { supabase } from './supabaseClient';
 
 const seedIssues = [
   { id: 'CVL-8942', title: 'Deep pothole near the school crossing', location: 'Ward 7 - Main Gate', category: 'Roads & potholes', score: 87, priority: 'Critical', status: 'Open', reports: 12 },
@@ -36,26 +37,21 @@ function Header({ authenticated, activePage = '', isAdmin = false, onLogout }) {
 }
 
 function Login({ error }) {
-  const [passwordMode, setPasswordMode] = useState(false);
-  const [credentials, setCredentials] = useState({ username: '', password: '' });
-  const [passwordError, setPasswordError] = useState('');
+  const [credentials, setCredentials] = useState({ email: '', password: '' });
+  const [authError, setAuthError] = useState('');
   const [signingIn, setSigningIn] = useState(false);
 
-  async function submitPassword(event) {
+  async function submitEmailPassword(event) {
     event.preventDefault();
     setSigningIn(true);
-    setPasswordError('');
+    setAuthError('');
     try {
-      const response = await fetch('/auth/password/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || 'Invalid username or password.');
-      window.location.href = data.redirect_url || '/report';
+      if (!supabase) throw new Error('Supabase is not configured.');
+      const { error: loginError } = await supabase.auth.signInWithPassword(credentials);
+      if (loginError) throw loginError;
+      window.location.reload();
     } catch (loginError) {
-      setPasswordError(loginError.message);
+      setAuthError(loginError.message);
     } finally {
       setSigningIn(false);
     }
@@ -73,14 +69,13 @@ function Login({ error }) {
           {error && <div className="error-banner" role="alert">{error}</div>}
           <a className="google-button" href="/auth/google/login"><GoogleIcon /> Continue with Google</a>
           <div className="or-divider"><span>OR</span></div>
-          <button className="password-toggle" type="button" onClick={() => setPasswordMode((current) => !current)}>{passwordMode ? 'Use Google instead' : 'Sign in with username and password'}</button>
-          {passwordMode && <form className="password-form" onSubmit={submitPassword}>
-            <label>Username<input value={credentials.username} onChange={(event) => setCredentials({ ...credentials, username: event.target.value })} autoComplete="username" required /></label>
+          <form className="password-form" onSubmit={submitEmailPassword}>
+            <label>Email<input type="email" value={credentials.email} onChange={(event) => setCredentials({ ...credentials, email: event.target.value })} autoComplete="email" required /></label>
             <label>Password<input type="password" value={credentials.password} onChange={(event) => setCredentials({ ...credentials, password: event.target.value })} autoComplete="current-password" minLength="8" required /></label>
-            {passwordError && <div className="error-banner" role="alert">{passwordError}</div>}
+            {authError && <div className="error-banner" role="alert">{authError}</div>}
             <button className="primary-button" disabled={signingIn}>{signingIn ? 'Signing in...' : 'Sign in'} <span>→</span></button>
-          </form>}
-          <p className="login-note">Google remains available. Password credentials are verified against database-backed salted password hashes.</p>
+          </form>
+          <p className="login-note">Email/password is handled securely by Supabase Auth. Google sign-in remains available as an alternative.</p>
         </section>
       </main>
     </div>
@@ -255,16 +250,38 @@ export default function App() {
   const error = useMemo(() => new URLSearchParams(window.location.search).get('error'), []);
 
   useEffect(() => {
-    fetch('/auth/me').then((response) => response.json()).then((data) => setSession({ loading: false, authenticated: data.authenticated, user: data.user })).catch(() => setSession({ loading: false, authenticated: false, user: null }));
+    async function loadSession() {
+      try {
+        const supabaseSession = supabase ? (await supabase.auth.getSession()).data.session : null;
+        if (supabaseSession?.access_token) {
+          const response = await fetch('/auth/supabase/session', { method: 'POST', headers: { Authorization: `Bearer ${supabaseSession.access_token}` } });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.detail || 'Unable to establish Supabase session.');
+          setSession({ loading: false, authenticated: true, user: { ...data.user, is_admin: data.user.email?.toLowerCase() === 'akshat.raj25@st.niituniversity.in' } });
+          return;
+        }
+        const response = await fetch('/auth/me');
+        const data = await response.json();
+        setSession({ loading: false, authenticated: data.authenticated, user: data.user });
+      } catch {
+        setSession({ loading: false, authenticated: false, user: null });
+      }
+    }
+    loadSession();
   }, []);
+
+  const logout = async () => {
+    if (supabase) await supabase.auth.signOut();
+    window.location.href = '/auth/logout';
+  };
 
   if (session.loading) return <div className="loading-screen">Loading CivicLens...</div>;
   if (session.authenticated) {
-    if (window.location.pathname === '/admin' && session.user?.is_admin) return <AdminPage user={session.user} onLogout={() => { window.location.href = '/auth/logout'; }} />;
+    if (window.location.pathname === '/admin' && session.user?.is_admin) return <AdminPage user={session.user} onLogout={logout} />;
     const page = window.location.pathname === '/tracker' ? 'tracker' : 'report';
     return page === 'tracker'
-      ? <TrackerPage user={session.user} onLogout={() => { window.location.href = '/auth/logout'; }} />
-      : <ReportPage user={session.user} onLogout={() => { window.location.href = '/auth/logout'; }} />;
+      ? <TrackerPage user={session.user} onLogout={logout} />
+      : <ReportPage user={session.user} onLogout={logout} />;
   }
   return <Login error={error} />;
 }

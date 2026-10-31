@@ -36,6 +36,31 @@ function Header({ authenticated, activePage = '', isAdmin = false, onLogout }) {
 }
 
 function Login({ error }) {
+  const [passwordMode, setPasswordMode] = useState(false);
+  const [credentials, setCredentials] = useState({ username: '', password: '' });
+  const [passwordError, setPasswordError] = useState('');
+  const [signingIn, setSigningIn] = useState(false);
+
+  async function submitPassword(event) {
+    event.preventDefault();
+    setSigningIn(true);
+    setPasswordError('');
+    try {
+      const response = await fetch('/auth/password/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || 'Invalid username or password.');
+      window.location.href = data.redirect_url || '/report';
+    } catch (loginError) {
+      setPasswordError(loginError.message);
+    } finally {
+      setSigningIn(false);
+    }
+  }
+
   return (
     <div className="auth-layout">
       <Header />
@@ -48,7 +73,14 @@ function Login({ error }) {
           {error && <div className="error-banner" role="alert">{error}</div>}
           <a className="google-button" href="/auth/google/login"><GoogleIcon /> Continue with Google</a>
           <div className="or-divider"><span>OR</span></div>
-          <p className="login-note">Google Sign-In is the recommended account path for CivicLens. New users are registered automatically after verified sign-in.</p>
+          <button className="password-toggle" type="button" onClick={() => setPasswordMode((current) => !current)}>{passwordMode ? 'Use Google instead' : 'Sign in with username and password'}</button>
+          {passwordMode && <form className="password-form" onSubmit={submitPassword}>
+            <label>Username<input value={credentials.username} onChange={(event) => setCredentials({ ...credentials, username: event.target.value })} autoComplete="username" required /></label>
+            <label>Password<input type="password" value={credentials.password} onChange={(event) => setCredentials({ ...credentials, password: event.target.value })} autoComplete="current-password" minLength="8" required /></label>
+            {passwordError && <div className="error-banner" role="alert">{passwordError}</div>}
+            <button className="primary-button" disabled={signingIn}>{signingIn ? 'Signing in...' : 'Sign in'} <span>→</span></button>
+          </form>}
+          <p className="login-note">Google remains available. Password credentials are verified against database-backed salted password hashes.</p>
         </section>
       </main>
     </div>

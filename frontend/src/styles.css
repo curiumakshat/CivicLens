@@ -26,6 +26,7 @@ a { color: inherit; }
 .google-button { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 52px; border: 1px solid #d6e0e5; border-radius: 9px; background: #fff; color: #213c47; text-decoration: none; font-size: 15px; font-weight: 700; box-shadow: 0 2px 5px #1c47550d; }
 .google-button:hover { border-color: #8bb7c4; background: #fbfdff; }
 .google-icon { width: 22px; color: #4285f4; font: 800 21px Arial, sans-serif; }
+.password-toggle { border: 0; background: transparent; color: #0a596c; cursor: pointer; font-size: 13px; font-weight: 700; padding: 6px; }.password-toggle:hover { text-decoration: underline; }.password-form { display: grid; gap: 14px; margin-top: 12px; text-align: left; }.password-form label { display: grid; gap: 7px; color: #294752; font-size: 12px; font-weight: 700; }.password-form input { width: 100%; border: 1px solid #d5e1e6; border-radius: 8px; padding: 12px; color: #1d3b46; background: #fff; outline: 0; }.password-form input:focus { border-color: #56a093; box-shadow: 0 0 0 3px #56a0931c; }.password-form .primary-button { width: 100%; }
 .or-divider { display: flex; align-items: center; gap: 14px; margin: 26px 0 22px; color: #82939b; font-size: 12px; font-weight: 700; }
 .or-divider::before, .or-divider::after { content: ''; height: 1px; flex: 1; background: #e3eaee; }
 .login-note { margin: 0; color: #6f828a; font-size: 12px; line-height: 1.6; }

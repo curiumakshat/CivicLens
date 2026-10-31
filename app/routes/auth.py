@@ -4,6 +4,8 @@ from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import sha256
+import base64
+import hashlib
 import hmac
 import re
 import secrets
@@ -57,6 +59,11 @@ class OtpVerification(BaseModel):
     otp: str = Field(min_length=OTP_LENGTH, max_length=OTP_LENGTH)
 
 
+class PasswordLogin(BaseModel):
+    username: str = Field(min_length=3, max_length=120)
+    password: str = Field(min_length=8, max_length=128)
+
+
 def normalize_contact(contact: str) -> str:
     contact = contact.strip()
     if "@" in contact:
@@ -69,6 +76,35 @@ def normalize_contact(contact: str) -> str:
 
 def hash_otp(code: str) -> str:
     return sha256(f"{settings.otp_pepper}:{code}".encode("utf-8")).hexdigest()
+
+
+def hash_password(password: str) -> str:
+    """Hash a password with salted scrypt; plaintext is never persisted."""
+    salt = secrets.token_bytes(16)
+    digest = hashlib.scrypt(password.encode("utf-8"), salt=salt, n=2**14, r=8, p=1)
+    return f"scrypt${base64.urlsafe_b64encode(salt).decode()}${base64.urlsafe_b64encode(digest).decode()}"
+
+
+def verify_password(password: str, encoded: str | None) -> bool:
+    if not encoded or not encoded.startswith("scrypt$"):
+        return False
+    try:
+        _, salt_text, digest_text = encoded.split("$", 2)
+        salt = base64.urlsafe_b64decode(salt_text.encode())
+        expected = base64.urlsafe_b64decode(digest_text.encode())
+        actual = hashlib.scrypt(password.encode("utf-8"), salt=salt, n=2**14, r=8, p=1)
+        return hmac.compare_digest(actual, expected)
+    except (ValueError, TypeError):
+        return False
+
+
+def set_user_session(request: Request, user: User) -> str:
+    request.session["user_id"] = user.id
+    request.session["contact"] = user.contact
+    request.session["email"] = user.email or user.contact
+    request.session["name"] = user.display_name or (user.email or user.username or "Resident").split("@")[0].title()
+    request.session["auth_provider"] = user.auth_provider
+    return "/admin" if (user.email or "").strip().lower() == settings.admin_email else "/report"
 
 
 def utc_now() -> datetime:
@@ -244,6 +280,26 @@ async def google_callback(
 # 2. LOGOUT ROUTE
 # ========================================================
 
+@router.post("/password/login", summary="Sign in with a database-backed password")
+def password_login(payload: PasswordLogin, request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
+    username = payload.username.strip().lower()
+    user = db.scalar(select(User).where(User.username == username))
+    if not user or not verify_password(payload.password, user.password_hash):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password.")
+
+    landing_page = set_user_session(request, user)
+    return {
+        "authenticated": True,
+        "redirect_url": landing_page,
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "name": user.display_name or user.username,
+            "provider": "password",
+        },
+    }
+
 @router.get("/logout", summary="Clear session and log out")
 @router.post("/logout", summary="Clear session and log out")
 def logout(request: Request, response: Response):
@@ -412,6 +468,7 @@ def current_user(request: Request, db: Session = Depends(get_db)) -> dict[str, A
         "user": {
             "id": user.id,
             "contact": user.contact,
+            "username": user.username,
             "email": user.email,
             "name": user.display_name or (user.email or user.contact).split("@")[0].title(),
             "avatar_url": user.avatar_url,
